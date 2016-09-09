@@ -1,8 +1,32 @@
 #include <stdio.h>
 #include <pcap.h>
+#include <string.h>
+
+#define MAXBYTES2CAPTURE 2048
+
+void processPacket(u_char *arg, const struct pcap_pkthdr* pkthdr, const u_char * packet) {
+  int i = 0, *counter = (int *) arg;
+
+  printf("Packet Count: %d\n", ++(*counter));
+  printf("Received Packet Size: %d\n", pkthdr->len);
+  printf("Payload:\n");
+
+  for (i=0; i<pkthdr->len; i++) {
+    if (isprint(packet[i])) 
+      printf("%c ", packet[i]);
+    else
+      printf(". ");
+
+    if ((i%16 == 0 && i != 0) || i == pkthdr->len-1)
+      printf("\n");
+  }
+
+  return;
+}
 
 int main(int args, char *argv[])
 {
+  int i = 0, count = 0;
   pcap_t *handle;
   char *dev;
   char errbuf[PCAP_ERRBUF_SIZE];
@@ -35,6 +59,7 @@ int main(int args, char *argv[])
     return(2);
   }
 
+  /**
   // compile and apply the filter
   if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) {
     fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
@@ -43,12 +68,18 @@ int main(int args, char *argv[])
   if (pcap_setfilter(handle, &fp) == -1) {
     fprintf(stderr, "Couldn't install filter %s: %s", filter_exp, pcap_geterr(handle));
   }
+  **/
 
+  /**
   // grab a packet
   packet = pcap_next(handle, &header);
   printf("Jacked a packet with length of [%d]\n", header.len);
   pcap_close(handle);
   return(0);
-  
+  **/
+
+  pcap_loop(handle, -1, processPacket, (u_char *)&count);
+
+  return 0;
 
 }

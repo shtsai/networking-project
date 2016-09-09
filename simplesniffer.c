@@ -30,12 +30,8 @@ int main(int args, char *argv[])
   pcap_t *handle;
   char *dev;
   char errbuf[PCAP_ERRBUF_SIZE];
-  struct bpf_program fp;
-  char filter_exp[] = "port 23";
   bpf_u_int32 mask;
   bpf_u_int32 net;
-  struct pcap_pkthdr header;
-  const u_char *packet;
 
   dev = pcap_lookupdev(errbuf);
   if (dev == NULL) {
@@ -58,25 +54,6 @@ int main(int args, char *argv[])
     fprintf(stderr, "Couldn't open device %s: %s\n", dev, errbuf);
     return(2);
   }
-
-  /**
-  // compile and apply the filter
-  if (pcap_compile(handle, &fp, filter_exp, 0, net) == -1) {
-    fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
-    return(2);
-  }
-  if (pcap_setfilter(handle, &fp) == -1) {
-    fprintf(stderr, "Couldn't install filter %s: %s", filter_exp, pcap_geterr(handle));
-  }
-  **/
-
-  /**
-  // grab a packet
-  packet = pcap_next(handle, &header);
-  printf("Jacked a packet with length of [%d]\n", header.len);
-  pcap_close(handle);
-  return(0);
-  **/
 
   pcap_loop(handle, -1, processPacket, (u_char *)&count);
 
