@@ -1,0 +1,53 @@
+#include <pcap.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netinet/if_ether.h>
+
+void my_callback(u_char *useless, const struct pcap_pkthdr* pkthdr, const u_char* packet) {
+  static int count = 1;
+  fprintf(stdout,"%d, ",count);
+  if (count == 4)
+    fprintf(stdout, "count == 4");
+  if (count == 7)
+    fprintf(stdout, "count == 7");
+  fflush(stdout);
+  count++;
+}
+
+int main (int argc, char **argv) {
+  int i;
+  char *dev;
+  char errbuff[PCAP_ERRBUF_SIZE];
+  pcap_t* handle;
+  const u_char *packet;
+  struct pcap_pkthdr hdr;
+  struct ether_header *eptr;
+
+  if (argc != 2) {
+    fprintf(stdout, "Usage: %s numpacket\n", argv[0]); 
+    return 0;
+  }
+
+  dev = pcap_lookupdev(errbuf);
+  if (dev == NULL) {
+    fprintf(stdout, "cannot find a device: %s\n", errbuf);
+    exit(1);
+  }
+
+  handle = pcap_open_live(dev, BUFSIZE, 1, 1000, errbuf);
+  if (handle == NULL) {
+    fprintf(stdout, "cannot open live: %s\n", errbuf);
+    exit(1);
+  }
+
+  pcap_loop(handle, atoi(argv[1]), my_callback, NULL);
+
+  fprintf(stdout, "\n Done!\n");
+  return 0;
+
+
+}
