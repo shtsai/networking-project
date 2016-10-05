@@ -9,8 +9,7 @@
 #include<netinet/udp.h>
 #include<arpa/inet.h>
 
-int printIPheader(struct ip* iphdr);
-//void printUDPheader(struct udphdr* udp_hdr);
+int printIPheader(char *buffer);
 void printUDPheader(char *buffer, int iphdr_len);
 
 void error(const char *msg){
@@ -25,8 +24,6 @@ int main(int argc, char *argv[]){
   char *buffer;
   int recvlen, iphdr_len;
   socklen_t clilen = sizeof(cli_addr);
-  struct ip *iphdr;
-  struct udphdr *udp_hdr;
   
   buffer = (char *) malloc(256);
   memset(buffer, 0, 256);
@@ -51,8 +48,7 @@ int main(int argc, char *argv[]){
   if (recvlen > 0) {
     printf("received %d bytes\n", recvlen);
     
-    iphdr = (struct ip*) buffer;
-    iphdr_len = printIPheader(iphdr);
+    iphdr_len = printIPheader(buffer);
     printUDPheader(buffer, iphdr_len);
     printf("\n");
   }
@@ -63,7 +59,8 @@ int main(int argc, char *argv[]){
 		     
 }
 
-int printIPheader(struct ip *iphdr) {
+int printIPheader(char *buffer) {
+  struct ip *iphdr = (struct ip*) buffer;
   // print the IP header info and return the IP header length
   printf("\n");
   printf("Below are the IP header info\n");
@@ -84,7 +81,6 @@ int printIPheader(struct ip *iphdr) {
   return (iphdr->ip_hl)*4;
 }
 
-//void printUDPheader(struct udphdr *udp_hdr) {
 void printUDPheader(char *buffer, int iphdr_len) {
   struct udphdr *udp_hdr = (struct udphdr*) (buffer + iphdr_len);
   // print the UDP header info
