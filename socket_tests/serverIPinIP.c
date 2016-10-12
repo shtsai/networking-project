@@ -22,6 +22,7 @@ int main(int argc, char *argv[]){
   struct sockaddr_in serv_addr, cli_addr, cli_addr2;
   int portno;
   int recvlen, iphdr_len;
+  socklen_t servlen = sizeof(serv_addr);
   socklen_t clilen = sizeof(cli_addr);
   socklen_t clilen2 = sizeof(cli_addr2);
   int one = 1;
@@ -47,7 +48,7 @@ int main(int argc, char *argv[]){
   }
   
   printf("waiting on port %d\n", portno);
-  recvlen = recvfrom(sockfd, buffer, 2047, 0, (struct sockaddr *) &cli_addr, &clilen);
+  recvlen = recvfrom(sockfd, buffer, 2047, 0, (struct sockaddr *) &serv_addr, &servlen);
   if (recvlen > 0) {
     printf("Here is the received packet, received %d bytes\n", recvlen);
     
@@ -58,8 +59,7 @@ int main(int argc, char *argv[]){
   }
 
   close(sockfd);
-  return 0;
-		     
+  return 0;		     
 }
 
 int printIPheader(char *buffer) {
