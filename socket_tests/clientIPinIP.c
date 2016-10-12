@@ -65,7 +65,7 @@ int main (int argc, char *argv[]) {
     error("ERROR setting socket option");
   }
 
-  recvsockfd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+  recvsockfd = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
   if (recvsockfd < 0) {
     error("ERROR recvsockfd openning");
   }
@@ -78,8 +78,8 @@ int main (int argc, char *argv[]) {
   memset(datagram, 0, 2048);
   
   // IP header
-  struct ip *iphdr1 = (struct ip *) datagram;
-  struct ip *iphdr2 = (struct ip *) (datagram + sizeof(struct ip));
+  struct ip *iphdr1 = (struct ip *) datagram; // outer IP header
+  struct ip *iphdr2 = (struct ip *) (datagram + sizeof(struct ip)); // inner IP header
   
   // UDP header
   struct udphdr *udph = (struct udphdr *) (datagram + 2 * sizeof(struct ip));
@@ -95,8 +95,6 @@ int main (int argc, char *argv[]) {
     data[i] = msg[i];
   }
   
-  //  strcpy(source_ip, "10.10.10.3");
-
   // destination info
   serv_addr.sin_family = AF_INET;
   //  serv_addr.sin_port = htons(atoi(argv[2]));
@@ -185,7 +183,7 @@ int main (int argc, char *argv[]) {
     printf("Successfully send packet: %d bytes\n", sendlen);
   }
 
-
+  // try to receive the packet, but receive nothing
   int recvlen = recvfrom(recvsockfd, buffer, 2047, 0, (struct sockaddr *) &cli_addr, &clilen);
   if (recvlen < 0) {
     error("ERROR receive from");
