@@ -75,8 +75,10 @@ int main(int argc, char *argv[]){
     printf("Here is the received packet, received %d bytes\n", recvlen);
     
     iphdr_len = printIPheader(buffer);
-    printUDPheader(buffer, iphdr_len);
+    printIPheader(buffer + iphdr_len);
+    printUDPheader(buffer, 2 * iphdr_len);
 
+    /*
     int newbuffer_len = encapsulate(buffer, newbuffer, &cli_addr);
 
     //printf("\nHere is the encapsulated packet:\n");
@@ -96,30 +98,8 @@ int main(int argc, char *argv[]){
     cli_addr2.sin_port = htons(51717);
     struct ip iphdr2 = *(struct ip *) buffer;
     cli_addr2.sin_addr = iphdr2.ip_src;
-
+    */
   }
-
-  
-  
-  // receive encapsulated packet
-  memset(buffer, 0, 2048);
-  recvlen = recvfrom(recvsockfd, buffer, 2047, 0, (struct sockaddr *) &cli_addr2, &clilen2);
-  if (recvlen > 0) {
-    printf("Here is the received packet, received %d bytes\n", recvlen);
-    iphdr_len = printIPheader(buffer);
-    printf("iphdr_len = %d\n", iphdr_len);
-    //    printIPheader(buffer + iphdr_len);
-    printUDPheader(newbuffer, iphdr_len*2);
-  }
-
-  // print hex value to check again wireshark
-  printf("\n\n");
-  while (recvlen > 0) {
-    printf("%x ", *buffer);
-    buffer++;
-    recvlen--;
-  }
-  
 
   close(sockfd);
   close(sendsockfd);
