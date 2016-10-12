@@ -65,7 +65,7 @@ int main (int argc, char *argv[]) {
     error("ERROR setting socket option");
   }
 
-  recvsockfd = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
+  recvsockfd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
   if (recvsockfd < 0) {
     error("ERROR recvsockfd openning");
   }
