@@ -43,13 +43,17 @@ int main(int argc, char *argv[])
   bzero(buffer, 256);
   fgets(buffer, 255, stdin);
   sendlen = strlen(buffer) + 1;
-  sendto(sockfd, buffer, sendlen, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+  if (sendto(sockfd, buffer, sendlen, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) > 0) {
+    printf("send message succesfully\n");
+  }
 
+  /*
   recvlen = recvfrom(sockfd, buffer, 255, 0, NULL, NULL);
   if (recvlen > 0) {
     buffer[recvlen] = 0;
     printf("received message: %s\n", buffer);
   }
+  */
 
   close(sockfd);
   return 0;
