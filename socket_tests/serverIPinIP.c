@@ -19,12 +19,10 @@ void error(const char *msg){
 
 int main(int argc, char *argv[]){
   int sockfd;
-  struct sockaddr_in serv_addr, cli_addr, cli_addr2;
-  int portno;
+  struct sockaddr_in serv_addr;
   int recvlen, iphdr_len;
   socklen_t servlen = sizeof(serv_addr);
-  socklen_t clilen = sizeof(cli_addr);
-  socklen_t clilen2 = sizeof(cli_addr2);
+  int port = 51717;         // port number
   int one = 1;
   const int *val = &one;
 
@@ -38,16 +36,15 @@ int main(int argc, char *argv[]){
   }
   
   bzero((char *) &serv_addr, sizeof(serv_addr));
-  portno = atoi(argv[1]);
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = INADDR_ANY;
-  serv_addr.sin_port = htons(portno);
+  serv_addr.sin_port = htons(port);  
   
   if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0){
     error("ERROR on binding");
   }
   
-  printf("waiting on port %d\n", portno);
+  printf("waiting on port %d\n", port);
   recvlen = recvfrom(sockfd, buffer, 2047, 0, (struct sockaddr *) &serv_addr, &servlen);
   if (recvlen > 0) {
     printf("Here is the received packet, received %d bytes\n", recvlen);
