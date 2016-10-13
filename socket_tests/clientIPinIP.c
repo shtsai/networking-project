@@ -88,7 +88,6 @@ int main (int argc, char *argv[]) {
 
   // Data
   data = datagram + sizeof(struct ip) * 2 + sizeof(struct udphdr);
-  //  strcpy(data, "Hello world! This is a message from clientRAW.");
   char *msg = "Hello world! This is a message from clientRAW.";
   int str_len = strlen(msg);
   for (int i = 0; i < str_len; i++) {
@@ -97,8 +96,6 @@ int main (int argc, char *argv[]) {
   
   // destination info
   serv_addr.sin_family = AF_INET;
-  //  serv_addr.sin_port = htons(atoi(argv[2]));
-  //serv_addr.sin_addr.s_addr = inet_addr(argv[1]);  // second argument is dest ip
   serv_addr.sin_port = htons(51717);
   serv_addr.sin_addr.s_addr = inet_addr("10.10.10.2");
 
