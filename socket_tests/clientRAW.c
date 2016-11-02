@@ -11,6 +11,8 @@
 
 int printIPheader(char *buffer);
 void printUDPheader(char *buffer, int iphdr_len);
+unsigned short checksum(unsigned short *ptr, int nbytes);
+void error(char *msg);
 
 // 12 bytes pseudo header 
 // for udp header checksum calculation
@@ -22,31 +24,10 @@ struct pseudo_header {
   u_int16_t udp_length;
 };
 
-unsigned short checksum(unsigned short *ptr, int nbytes) {
-  register long sum;
-  unsigned short oddbyte;
-  register short answer;
-
-  sum = 0;
-  while(nbytes > 1) {
-    sum += *ptr++;
-    nbytes-=2;
-  }
-  if(nbytes == 1) {
-    oddbyte = 0;
-    *((u_char*) &oddbyte) = *(u_char*)ptr;
-    sum += oddbyte;
-  }
-  sum = (sum >> 16) + (sum & 0xffff);
-  sum = sum + (sum >>16);
-  answer = (short)~sum;
-  return answer;
-}
-
-void error(char *msg) {
-  perror(msg);
-  exit(1);
-}
+/*********************************************************************************
+ *   WARNING !!                                                                  *
+ *   This program is still in test, all the addresses and ports are hardcoded    *
+ *********************************************************************************/
 
 int main (int argc, char *argv[]) {
   int sockfd;
@@ -144,6 +125,9 @@ int main (int argc, char *argv[]) {
     printf("Successfully send packet\n");
   }
 
+  /*
+    // this part of code receives incoming packets, e.g. an ACK from the server
+    // not used in this case
 
   int servlen = sizeof serv_addr;
   int recvlen = recvfrom(sockfd, buffer, 2047, 0, (struct sockaddr *) &serv_addr, &servlen);
@@ -154,15 +138,15 @@ int main (int argc, char *argv[]) {
   int iphdr_len1 = printIPheader(buffer);
   int iphdr_len2 = printIPheader(buffer + iphdr_len1);
   printUDPheader(buffer, iphdr_len1 + iphdr_len2);
-    
+  */    
+
   free(pseudogram);
   free(datagram);
   free(buffer);
 		       
   close(sockfd);
   
-  return 0;
-  
+  return 0;  
 }
 
 int printIPheader(char *buffer) {
@@ -209,4 +193,30 @@ void printUDPheader(char *buffer, int iphdr_len) {
   }
   printf("\n");
   printf("-------------------------------------\n");
+}
+
+unsigned short checksum(unsigned short *ptr, int nbytes) {
+  register long sum;
+  unsigned short oddbyte;
+  register short answer;
+
+  sum = 0;
+  while(nbytes > 1) {
+    sum += *ptr++;
+    nbytes-=2;
+  }
+  if(nbytes == 1) {
+    oddbyte = 0;
+    *((u_char*) &oddbyte) = *(u_char*)ptr;
+    sum += oddbyte;
+  }
+  sum = (sum >> 16) + (sum & 0xffff);
+  sum = sum + (sum >>16);
+  answer = (short)~sum;
+  return answer;
+}
+
+void error(char *msg) {
+  perror(msg);
+  exit(1);
 }
