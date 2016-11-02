@@ -13,13 +13,14 @@ int printIPheader(char *buffer);
 void printUDPheader(char *buffer, int iphdr_len);
 int encapsulate(char *buffer, char *newbuffer, struct sockaddr_in *cli_addr);
 unsigned short checksum(unsigned short *ptr, int nbytes);
-
-void error(const char *msg){
-  perror(msg);
-  exit(1);
-}
+void error(const char *msg);
 
 int main(int argc, char *argv[]){
+  if (argc < 2) {
+    fprintf(stderr, "usage %s port\n", argv[0]);
+    exit(0);
+  }
+
   int sockfd, sendsockfd, recvsockfd;
   struct sockaddr_in serv_addr, cli_addr, cli_addr2;
   int portno;
@@ -98,8 +99,6 @@ int main(int argc, char *argv[]){
     cli_addr2.sin_addr = iphdr2.ip_src;
 
   }
-
-  
   
   // receive encapsulated packet
   memset(buffer, 0, 2048);
@@ -109,18 +108,9 @@ int main(int argc, char *argv[]){
     iphdr_len = printIPheader(buffer);
     printf("iphdr_len = %d\n", iphdr_len);
     //    printIPheader(buffer + iphdr_len);
-    printUDPheader(newbuffer, iphdr_len*2);
-  }
-
-  // print hex value to check again wireshark
-  printf("\n\n");
-  while (recvlen > 0) {
-    printf("%x ", *buffer);
-    buffer++;
-    recvlen--;
+    printUDPheader(buffer, iphdr_len);
   }
   
-
   close(sockfd);
   close(sendsockfd);
   return 0;
@@ -190,7 +180,10 @@ int encapsulate(char *buffer, char *newbuffer, struct sockaddr_in *cli_addr ) {
   newiphdr->ip_p = 4;
   newiphdr->ip_sum = 0;
   newiphdr->ip_src = iphdr.ip_dst;
-  newiphdr->ip_dst = iphdr.ip_src;
+  //newiphdr->ip_dst = iphdr.ip_src;
+  struct in_addr ip_dst;
+  ip_dst.s_addr = inet_addr("10.10.10.4");
+  newiphdr->ip_dst = ip_dst;
 
   // copy old packet as payload
   memcpy(newbuffer + sizeof(struct ip), buffer, iphdr.ip_len);
@@ -226,4 +219,9 @@ unsigned short checksum(unsigned short *ptr, int nbytes){
   sum = sum + (sum >> 16);
   answer = (short) ~sum;
   return answer;
+}
+
+void error(const char *msg){
+  perror(msg);
+  exit(1);
 }
