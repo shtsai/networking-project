@@ -11,6 +11,8 @@
 
 int printIPheader(char *buffer);
 void printUDPheader(char *buffer, int iphdr_len);
+unsigned short checksum(unsigned short *ptr, int nbytes);
+void error(char *msg);
 
 // 12 bytes pseudo header 
 // for udp header checksum calculation
@@ -21,32 +23,6 @@ struct pseudo_header {
   u_int8_t protocol;
   u_int16_t udp_length;
 };
-
-unsigned short checksum(unsigned short *ptr, int nbytes) {
-  register long sum;
-  unsigned short oddbyte;
-  register short answer;
-
-  sum = 0;
-  while(nbytes > 1) {
-    sum += *ptr++;
-    nbytes-=2;
-  }
-  if(nbytes == 1) {
-    oddbyte = 0;
-    *((u_char*) &oddbyte) = *(u_char*)ptr;
-    sum += oddbyte;
-  }
-  sum = (sum >> 16) + (sum & 0xffff);
-  sum = sum + (sum >>16);
-  answer = (short)~sum;
-  return answer;
-}
-
-void error(char *msg) {
-  perror(msg);
-  exit(1);
-}
 
 int main (int argc, char *argv[]) {
   int sockfd, recvsockfd;
@@ -78,8 +54,8 @@ int main (int argc, char *argv[]) {
   memset(datagram, 0, 2048);
   
   // IP header
-  struct ip *iphdr1 = (struct ip *) datagram;
-  struct ip *iphdr2 = (struct ip *) (datagram + sizeof(struct ip));
+  struct ip *iphdr1 = (struct ip *) datagram; // outer IP header
+  struct ip *iphdr2 = (struct ip *) (datagram + sizeof(struct ip)); // inner IP header
   
   // UDP header
   struct udphdr *udph = (struct udphdr *) (datagram + 2 * sizeof(struct ip));
@@ -88,19 +64,14 @@ int main (int argc, char *argv[]) {
 
   // Data
   data = datagram + sizeof(struct ip) * 2 + sizeof(struct udphdr);
-  //  strcpy(data, "Hello world! This is a message from clientRAW.");
   char *msg = "Hello world! This is a message from clientRAW.";
   int str_len = strlen(msg);
   for (int i = 0; i < str_len; i++) {
     data[i] = msg[i];
   }
   
-  //  strcpy(source_ip, "10.10.10.3");
-
   // destination info
   serv_addr.sin_family = AF_INET;
-  //  serv_addr.sin_port = htons(atoi(argv[2]));
-  //serv_addr.sin_addr.s_addr = inet_addr(argv[1]);  // second argument is dest ip
   serv_addr.sin_port = htons(51717);
   serv_addr.sin_addr.s_addr = inet_addr("10.10.10.2");
 
@@ -111,14 +82,14 @@ int main (int argc, char *argv[]) {
   iphdr2->ip_len = htons(sizeof(struct ip) + sizeof(struct udphdr) + strlen(data));
   iphdr2->ip_id = htons(54321);
   iphdr2->ip_off = 0;
-  iphdr2->ip_ttl = 255;
+  iphdr2->ip_ttl = 254;
   iphdr2->ip_p = IPPROTO_UDP;
   iphdr2->ip_sum = 0;
   
   struct in_addr ip2_src;
-  ip2_src.s_addr = inet_addr("10.10.10.2");
+  ip2_src.s_addr = inet_addr("10.10.10.3");
   struct in_addr ip2_dst;
-  ip2_dst.s_addr = inet_addr("10.10.10.3");
+  ip2_dst.s_addr = inet_addr("10.10.10.2");
   iphdr2->ip_src = ip2_src;
   iphdr2->ip_dst = ip2_dst;
 
@@ -130,8 +101,8 @@ int main (int argc, char *argv[]) {
   udph->len = htons(8 + strlen(data));
   udph->check = 0;
 
-  psh.source_address = inet_addr("10.10.10.2");
-  psh.dest_address = inet_addr("10.10.10.3");
+  psh.source_address = inet_addr("10.10.10.3");
+  psh.dest_address = inet_addr("10.10.10.2");
   psh.placeholder = 0;
   psh.protocol = IPPROTO_UDP;
   psh.udp_length = sizeof(struct udphdr) + strlen(data);
@@ -143,7 +114,6 @@ int main (int argc, char *argv[]) {
   memcpy(pseudogram + sizeof(struct pseudo_header), udph, sizeof(struct udphdr) + strlen(data));
   // check sum
   udph->check = checksum((unsigned short*) pseudogram, psize);
-
   
   // Fill in the outer IP header (iphdr1)
   iphdr1->ip_hl = 5;
@@ -157,14 +127,13 @@ int main (int argc, char *argv[]) {
   iphdr1->ip_sum = 0;
   
   struct in_addr ip1_src;
-  ip1_src.s_addr = inet_addr("10.10.10.3");
+  ip1_src.s_addr = inet_addr("10.10.10.2");
   struct in_addr ip1_dst;
-  ip1_dst.s_addr = inet_addr("10.10.10.2");
+  ip1_dst.s_addr = inet_addr("10.10.10.4");
   iphdr1->ip_src = ip1_src;
   iphdr1->ip_dst = ip1_dst;
 
   iphdr1->ip_sum = checksum((unsigned short *)datagram, ntohs(iphdr1->ip_len));
-
 
   // receiving info
   cli_addr.sin_family = AF_INET;
@@ -185,7 +154,8 @@ int main (int argc, char *argv[]) {
     printf("Successfully send packet: %d bytes\n", sendlen);
   }
 
-
+  /* 
+     // this part tries to receive an incoming packet
   int recvlen = recvfrom(recvsockfd, buffer, 2047, 0, (struct sockaddr *) &cli_addr, &clilen);
   if (recvlen < 0) {
     error("ERROR receive from");
@@ -196,7 +166,8 @@ int main (int argc, char *argv[]) {
   int iphdr_len1 = printIPheader(buffer);
   int iphdr_len2 = printIPheader(buffer + iphdr_len1);
   printUDPheader(buffer, iphdr_len1 + iphdr_len2);
-    
+  */   
+ 
   free(pseudogram);
   free(datagram);
   free(buffer);
@@ -252,4 +223,30 @@ void printUDPheader(char *buffer, int iphdr_len) {
   }
   printf("\n");
   printf("-------------------------------------\n");
+}
+
+unsigned short checksum(unsigned short *ptr, int nbytes) {
+  register long sum;
+  unsigned short oddbyte;
+  register short answer;
+
+  sum = 0;
+  while(nbytes > 1) {
+    sum += *ptr++;
+    nbytes-=2;
+  }
+  if(nbytes == 1) {
+    oddbyte = 0;
+    *((u_char*) &oddbyte) = *(u_char*)ptr;
+    sum += oddbyte;
+  }
+  sum = (sum >> 16) + (sum & 0xffff);
+  sum = sum + (sum >>16);
+  answer = (short)~sum;
+  return answer;
+}
+
+void error(char *msg) {
+  perror(msg);
+  exit(1);
 }
