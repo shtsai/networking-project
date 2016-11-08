@@ -25,15 +25,29 @@ struct pseudo_header {
 };
 
 int main (int argc, char *argv[]) {
+  /*
+   *  src_server is the original server that creates this packet
+   *  dst_server receives the packet from the src_server, encapsulates it, and forwards it to forward server
+   *  forward_server receives the IP-in-IP packet
+   */
+  if (argc < 5) {
+    fprintf(stderr, "usage: %s src_server dst_server forward_server port\n", argv[0]);
+    exit(0);
+  }
+  
   int sockfd, recvsockfd;
   int one = 1;
   const int *val = &one;
+  char *src_server = argv[1];
+  char *dst_server = argv[2];
+  char *forward_server = argv[3];
+  int portno = atoi(argv[4]);
   
   char *buffer;
   buffer = (char *)malloc(2048);
   memset(buffer, 0, 2048);
  
-  sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
+  sockfd = socket(AF_INET, SOCK_RAW, 4);
   if (sockfd < 0) {
     error("ERROR socket openning");
   }
@@ -70,10 +84,10 @@ int main (int argc, char *argv[]) {
     data[i] = msg[i];
   }
   
-  // destination info
+  // destination info (to forward server)
   serv_addr.sin_family = AF_INET;
-  serv_addr.sin_port = htons(51717);
-  serv_addr.sin_addr.s_addr = inet_addr("10.10.10.2");
+  serv_addr.sin_port = htons(portno);
+  serv_addr.sin_addr.s_addr = inet_addr(forward_server);
 
   // Fill in the inner IP header (iphdr2)
   iphdr2->ip_hl = 5;
@@ -87,9 +101,9 @@ int main (int argc, char *argv[]) {
   iphdr2->ip_sum = 0;
   
   struct in_addr ip2_src;
-  ip2_src.s_addr = inet_addr("10.10.10.3");
+  ip2_src.s_addr = inet_addr(src_server);
   struct in_addr ip2_dst;
-  ip2_dst.s_addr = inet_addr("10.10.10.2");
+  ip2_dst.s_addr = inet_addr(dst_server);
   iphdr2->ip_src = ip2_src;
   iphdr2->ip_dst = ip2_dst;
 
@@ -97,12 +111,12 @@ int main (int argc, char *argv[]) {
   
   // fill in UDP header
   udph->source = htons(51818);
-  udph->dest = htons(51717);  // third argument is dest port
+  udph->dest = htons(portno);
   udph->len = htons(8 + strlen(data));
   udph->check = 0;
 
-  psh.source_address = inet_addr("10.10.10.3");
-  psh.dest_address = inet_addr("10.10.10.2");
+  psh.source_address = inet_addr(src_server);
+  psh.dest_address = inet_addr(dst_server);
   psh.placeholder = 0;
   psh.protocol = IPPROTO_UDP;
   psh.udp_length = sizeof(struct udphdr) + strlen(data);
@@ -127,9 +141,9 @@ int main (int argc, char *argv[]) {
   iphdr1->ip_sum = 0;
   
   struct in_addr ip1_src;
-  ip1_src.s_addr = inet_addr("10.10.10.2");
+  ip1_src.s_addr = inet_addr(dst_server);
   struct in_addr ip1_dst;
-  ip1_dst.s_addr = inet_addr("10.10.10.4");
+  ip1_dst.s_addr = inet_addr(forward_server);
   iphdr1->ip_src = ip1_src;
   iphdr1->ip_dst = ip1_dst;
 
