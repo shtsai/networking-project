@@ -56,18 +56,19 @@ int main (int argc, char *argv[]) {
   }
   */
 
-
+  int count = 0;
   while (1) {
     recvlen = recvfrom(sockfd, buffer, 2047, 0, (struct sockaddr *) &cli_addr, &clilen);
     if (recvlen > 0) {
-      printf("Here is the received packet, received %d bytes\n", recvlen);
+      printf("Packet %d, %d bytes, ",count, recvlen);
       //      printHex(buffer, recvlen);
       int protocol = getProtocol(buffer);
-      printf("The protocol number is %d\n", protocol);
+      printf("Protocol = %d\n", protocol);
     }
     memset(buffer, 0 ,2048);
     recvlen = 0;
     printf("/n");
+    count++;
   }
 
   free(buffer);
