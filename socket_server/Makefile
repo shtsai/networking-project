@@ -1,13 +1,16 @@
 # build an executable from socket_server.c
 
 CC = gcc
+CFLAGS = -I.
+DEPS = print_packet.h
+CTARGET = socket_server
 
-TARGET = socket_server
+%.o: %.c $(DEPS)
+	$(CC) -c -o $@ $< $(CFLAGS)
 
-all: $(TARGET)
-
-$(TARGET): $(TARGET).c
-	$(CC) -o $(TARGET) $(TARGET).c
+socket_server: socket_server.o print_packet.o
+	$(CC) -o socket_server socket_server.o print_packet.o -I.
 
 clean:
-	$(RM) $(TARGET)
+	rm -f $(CTARGET)
+	rm *.o

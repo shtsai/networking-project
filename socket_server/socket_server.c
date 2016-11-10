@@ -10,9 +10,12 @@
 #include<arpa/inet.h>
 #include<netinet/if_ether.h>  // for ETH_P_IP
 
+#include<print_packet.h>  // for print packets
+
 void error(const char *msg);
 void printHex(char *buffer, int recvlen);
 int getProtocol(char *buffer);
+void handleUDP(char *buffer);
 
 int main (int argc, char *argv[]) {
   if (argc < 2) {
@@ -64,10 +67,31 @@ int main (int argc, char *argv[]) {
       //      printHex(buffer, recvlen);
       int protocol = getProtocol(buffer);
       printf("Protocol = %d\n", protocol);
+      switch (protocol){
+	/*
+      case 4:
+	   handleIPinIP(buffer);
+	   break;
+         case 6:
+	   handleTCP(buffer);
+	   break;
+	*/
+         case 17:
+	   handleUDP(buffer);
+	   break;
+	   /*
+         case 89:
+	   handleOSPF(buffer);
+	   break;
+	   */
+         default:
+	   printf("Other packet");
+      }
+	
     }
     memset(buffer, 0 ,2048);
     recvlen = 0;
-    printf("/n");
+    printf("\n");
     count++;
   }
 
@@ -83,6 +107,13 @@ int getProtocol(char *buffer) {
   char *p_iphdr = buffer + ethhdr_len;
   struct ip *iphdr = (struct ip *) p_iphdr;
   return iphdr->ip_p;
+}
+
+void handleUDP(char *buffer) {
+  int ethhdr_len = (int) sizeof(struct ethhdr);
+  char *p_iphdr = buffer + ethhdr_len;
+  int ip_len = printIPheader(p_iphdr);
+  printUDPheader(p_iphdr, ip_len);
 }
 
 void printHex(char *buffer, int recvlen) {
