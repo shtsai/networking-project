@@ -14,8 +14,10 @@
 
 void error(const char *msg);
 void printHex(char *buffer, int recvlen);
-int getProtocol(char *buffer);
-void handleUDP(char *buffer);
+char* skipEthHdr(char *buffer);
+int getProtocol(char *packet);
+void handleUDP(char *packet);
+void handleIPinIP(char *packet);
 
 int main (int argc, char *argv[]) {
   if (argc < 2) {
@@ -65,27 +67,30 @@ int main (int argc, char *argv[]) {
     if (recvlen > 0) {
       printf("Packet %d, %d bytes, ",count, recvlen);
       //      printHex(buffer, recvlen);
-      int protocol = getProtocol(buffer);
+
+      char *packet = skipEthHdr(buffer);
+      int protocol = getProtocol(packet);
       printf("Protocol = %d\n", protocol);
-      switch (protocol){
-	/*
+
+
+      switch (protocol){	
       case 4:
-	   handleIPinIP(buffer);
-	   break;
-         case 6:
-	   handleTCP(buffer);
-	   break;
-	*/
-         case 17:
-	   handleUDP(buffer);
-	   break;
+	handleIPinIP(packet);
+	break;
+      case 17:
+	handleUDP(packet);
+	break;
 	   /*
+	  case 6:
+	  handleTCP(packet);
+	  break;
+
          case 89:
-	   handleOSPF(buffer);
+	   handleOSPF(packet);
 	   break;
 	   */
-         default:
-	   printf("Other packet");
+      default:
+	printf("Other packet");
       }
 	
     }
@@ -100,20 +105,32 @@ int main (int argc, char *argv[]) {
   return 0;
 }
 
-int getProtocol(char *buffer) {
+char* skipEthHdr(char *buffer) {
+  int ethhdr_len = (int) sizeof(struct ethhdr);
+  return buffer + ethhdr_len;
+}
+
+int getProtocol(char *packet) {
   // input is a buffer of a received packet (Ethernet header included),
   // this function returns the protocol number in the IP header
-  int ethhdr_len = (int) sizeof(struct ethhdr);
-  char *p_iphdr = buffer + ethhdr_len;
-  struct ip *iphdr = (struct ip *) p_iphdr;
+  struct ip *iphdr = (struct ip *) packet;
   return iphdr->ip_p;
 }
 
-void handleUDP(char *buffer) {
-  int ethhdr_len = (int) sizeof(struct ethhdr);
-  char *p_iphdr = buffer + ethhdr_len;
-  int ip_len = printIPheader(p_iphdr);
-  printUDPheader(p_iphdr, ip_len);
+void handleUDP(char *packet) {
+  int ip_len = printIPheader(packet);
+  printUDPheader(packet, ip_len);
+}
+
+void handleIPinIP(char *packet) {
+  // print outer header
+  int ip_len1 = printIPheader(packet);
+  
+  int protocol = getProtocol(packet + ip_len1);
+  if (protocol == 17) {
+    handleUDP(packet + ip_len1);
+  }
+  
 }
 
 void printHex(char *buffer, int recvlen) {
