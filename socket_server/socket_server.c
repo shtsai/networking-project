@@ -53,7 +53,7 @@ int main (int argc, char *argv[]) {
       printf("Packet %d, %d bytes, ",count, recvlen);
 
       char *packet = skipEthHdr(buffer);  // all packets received contain ethernet headers, skip ethernet headers here
-      int protocol = getProtocol(packet); // this function reads the protocol value from the IP header
+      int protocol = getProtocol(packet); // reads the protocol value from the IP header
       printf("Protocol = %d\n", protocol);
 
       switch (protocol){	
@@ -67,7 +67,7 @@ int main (int argc, char *argv[]) {
 	handleOSPF(packet);
 	break;
 	
-      /*  // forget TCP packets for now, b/c need to deal with TCP handshakes
+      /*  // ignore TCP packets for now, b/c need to deal with TCP handshakes
       case 6:
         handleTCP(packet);
         break;
