@@ -7,6 +7,11 @@
 #include<netinet/ip.h>
 #include<arpa/inet.h>
 
+/*
+ *  This program creates a TCP packet using raw socket
+ *  For now, it only generates one SYN packet to initiate TCP connection
+ */
+
 struct pseudo_header
 {
   u_int32_t source_address;
@@ -17,32 +22,8 @@ struct pseudo_header
 };
 
 int createTCP(char *datagram, char *src, char *dest, int port, struct sockaddr_in serv_addr, char *msg);
-
-unsigned short checksum(unsigned short *ptr, int nbytes) {
-  register long sum;
-  unsigned short oddbyte;
-  register short answer;
-
-  sum = 0;
-  while(nbytes > 1) {
-    sum += *ptr++;
-    nbytes-=2;
-  }
-  if(nbytes == 1) {
-    oddbyte = 0;
-    *((u_char*) &oddbyte) = *(u_char*)ptr;
-    sum += oddbyte;
-  }
-  sum = (sum >> 16) + (sum & 0xffff);
-  sum = sum + (sum >>16);
-  answer = (short)~sum;
-  return answer;
-}
-
-void error(char *msg) {
-  perror(msg);
-  exit(1);
-}
+unsigned short checksum(unsigned short *ptr, int nbytes);
+void error(char *msg);
 
 int main (int argc, char *argv[]) {
   int sockfd;
@@ -77,6 +58,7 @@ int main (int argc, char *argv[]) {
   serv_addr.sin_addr.s_addr = inet_addr(dest);
   serv_addr.sin_port = htons(port);
   
+  // create TCP packet 
   int packet_len = createTCP(datagram, src, dest, port, serv_addr, msg); 
   
   // send the packet
@@ -161,4 +143,30 @@ int createTCP(char *datagram, char *src, char *dest, int port, struct sockaddr_i
 
   free(pseudogram);
   return ntohs(iphdr->ip_len);
+}
+
+unsigned short checksum(unsigned short *ptr, int nbytes) {
+  register long sum;
+  unsigned short oddbyte;
+  register short answer;
+
+  sum = 0;
+  while(nbytes > 1) {
+    sum += *ptr++;
+    nbytes-=2;
+  }
+  if(nbytes == 1) {
+    oddbyte = 0;
+    *((u_char*) &oddbyte) = *(u_char*)ptr;
+    sum += oddbyte;
+  }
+  sum = (sum >> 16) + (sum & 0xffff);
+  sum = sum + (sum >>16);
+  answer = (short)~sum;
+  return answer;
+}
+
+void error(char *msg) {
+  perror(msg);
+  exit(1);
 }
