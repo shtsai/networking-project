@@ -29,6 +29,10 @@ struct pseudo_header {
  *   This program is still in test, all the addresses and ports are hardcoded    *
  *********************************************************************************/
 
+/*
+ *  This program creates a UDP packet from scratch 
+ */
+
 int main (int argc, char *argv[]) {
   int sockfd;
   int one = 1;
