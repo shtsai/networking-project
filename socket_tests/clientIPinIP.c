@@ -25,15 +25,35 @@ struct pseudo_header {
 };
 
 int main (int argc, char *argv[]) {
+  /*
+   *  This program requires four arguments:
+   *     - src_server is the original server that creates this packet
+   *     - dst_server receives the packet from the src_server, encapsulates it, and forwards it to forward server
+   *     - forward_server receives the IP-in-IP packet
+   *     - port is the port number 
+   *
+   *  For now, the message sent is hardcoded.
+   */
+  if (argc < 5) {
+    fprintf(stderr, "usage: %s src_server dst_server forward_server port\n", argv[0]);
+    exit(0);
+  }
+  
   int sockfd, recvsockfd;
   int one = 1;
   const int *val = &one;
-  
+  char *src_server = argv[1];
+  char *dst_server = argv[2];
+  char *forward_server = argv[3];
+  int portno = atoi(argv[4]);
+
+  // initialize received buffer
   char *buffer;
   buffer = (char *)malloc(2048);
   memset(buffer, 0, 2048);
- 
-  sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
+
+  // create socket and set socket option
+  sockfd = socket(AF_INET, SOCK_RAW, 4);
   if (sockfd < 0) {
     error("ERROR socket openning");
   }
@@ -41,6 +61,7 @@ int main (int argc, char *argv[]) {
     error("ERROR setting socket option");
   }
 
+  /* This part is used for receive packets  
   recvsockfd = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
   if (recvsockfd < 0) {
     error("ERROR recvsockfd openning");
@@ -48,7 +69,18 @@ int main (int argc, char *argv[]) {
   if (setsockopt(sockfd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0) {
     error ("ERROR setting recvsocket option");
   }
-  
+
+  // receiving info
+  cli_addr.sin_family = AF_INET;
+  cli_addr.sin_port = htons(51717);
+  cli_addr.sin_addr.s_addr = INADDR_ANY;
+  int clilen = sizeof cli_addr;
+  if (bind(recvsockfd, (struct sockaddr *) &cli_addr, sizeof(cli_addr)) < 0) {
+    error("ERROR on binding");
+  }
+  */
+
+  // allocate space for the packet we are creating
   char *datagram, *data, source_ip[32], *pseudogram;
   datagram = (char *) malloc(2048);
   memset(datagram, 0, 2048);
@@ -70,10 +102,10 @@ int main (int argc, char *argv[]) {
     data[i] = msg[i];
   }
   
-  // destination info
+  // destination info (to forward server)
   serv_addr.sin_family = AF_INET;
-  serv_addr.sin_port = htons(51717);
-  serv_addr.sin_addr.s_addr = inet_addr("10.10.10.2");
+  serv_addr.sin_port = htons(portno);
+  serv_addr.sin_addr.s_addr = inet_addr(forward_server);
 
   // Fill in the inner IP header (iphdr2)
   iphdr2->ip_hl = 5;
@@ -87,9 +119,9 @@ int main (int argc, char *argv[]) {
   iphdr2->ip_sum = 0;
   
   struct in_addr ip2_src;
-  ip2_src.s_addr = inet_addr("10.10.10.3");
+  ip2_src.s_addr = inet_addr(src_server);
   struct in_addr ip2_dst;
-  ip2_dst.s_addr = inet_addr("10.10.10.2");
+  ip2_dst.s_addr = inet_addr(dst_server);
   iphdr2->ip_src = ip2_src;
   iphdr2->ip_dst = ip2_dst;
 
@@ -97,12 +129,12 @@ int main (int argc, char *argv[]) {
   
   // fill in UDP header
   udph->source = htons(51818);
-  udph->dest = htons(51717);  // third argument is dest port
+  udph->dest = htons(portno);
   udph->len = htons(8 + strlen(data));
   udph->check = 0;
 
-  psh.source_address = inet_addr("10.10.10.3");
-  psh.dest_address = inet_addr("10.10.10.2");
+  psh.source_address = inet_addr(src_server);
+  psh.dest_address = inet_addr(dst_server);
   psh.placeholder = 0;
   psh.protocol = IPPROTO_UDP;
   psh.udp_length = sizeof(struct udphdr) + strlen(data);
@@ -127,23 +159,13 @@ int main (int argc, char *argv[]) {
   iphdr1->ip_sum = 0;
   
   struct in_addr ip1_src;
-  ip1_src.s_addr = inet_addr("10.10.10.2");
+  ip1_src.s_addr = inet_addr(dst_server);
   struct in_addr ip1_dst;
-  ip1_dst.s_addr = inet_addr("10.10.10.4");
+  ip1_dst.s_addr = inet_addr(forward_server);
   iphdr1->ip_src = ip1_src;
   iphdr1->ip_dst = ip1_dst;
 
   iphdr1->ip_sum = checksum((unsigned short *)datagram, ntohs(iphdr1->ip_len));
-
-  // receiving info
-  cli_addr.sin_family = AF_INET;
-  cli_addr.sin_port = htons(51717);
-  //  cli_addr.sin_addr.s_addr = inet_addr("10.10.10.2");
-  cli_addr.sin_addr.s_addr = INADDR_ANY;
-  int clilen = sizeof cli_addr;
-  if (bind(recvsockfd, (struct sockaddr *) &cli_addr, sizeof(cli_addr)) < 0) {
-    error("ERROR on binding");
-  }
 
   // send IP in IP packet
   int sendlen;
@@ -175,13 +197,14 @@ int main (int argc, char *argv[]) {
   close(sockfd);
   close(recvsockfd);
   
-  return 0;
-  
+  return 0;  
 }
 
 int printIPheader(char *buffer) {
-  struct ip *iphdr = (struct ip*) buffer;
   // print the IP header info and return the IP header length
+
+  struct ip *iphdr = (struct ip*) buffer;
+  
   printf("\n");
   printf("Below are the IP header info\n");
   printf("-------------------------------------\n");
@@ -204,9 +227,10 @@ int printIPheader(char *buffer) {
 void printUDPheader(char *buffer, int iphdr_len) {
   // buffer is a pointer to the received packet
   // iphdr_len is the length of the IP header
+  // this function skips the IP header and prints the info contained in UDP packet
   
   struct udphdr *udp_hdr = (struct udphdr*) (buffer + iphdr_len);
-  // print the UDP header info
+  
   printf("\n");
   printf("Below are the UDP header info\n");
   printf("-------------------------------------\n");
@@ -226,6 +250,7 @@ void printUDPheader(char *buffer, int iphdr_len) {
 }
 
 unsigned short checksum(unsigned short *ptr, int nbytes) {
+  // this function is used for calculating checksum
   register long sum;
   unsigned short oddbyte;
   register short answer;
