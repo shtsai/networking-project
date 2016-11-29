@@ -1,0 +1,10 @@
+FROM ubuntu:16.04
+RUN apt-get -y update && apt-get install -y \
+  git \
+  net-tools \
+  inetutils-ping \
+  emacs \
+  make \
+  gcc \
+  traceroute
+
