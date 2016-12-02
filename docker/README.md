@@ -4,23 +4,39 @@ This document will go over the steps of setting up a docker network.
 
 ## Subdirectory
 
-There are two subdirectories:
-      -build: contains the Dockerfile for creating docker image of the vm servers we will use
-      -shellscript: contains shellscripts 
+There are two subdirectories:   
+* build: contains the Dockerfile for creating docker image of the vm servers we will use
+* shellscript: contains shellscripts for networks and containers
+      
+Check the README files in these two subdirectories for further details.
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+These instructions will give you the tools you need to set up a docker network in your machine for the experienment. 
 
 ### Prerequisites
 
-What things you need to install the software and how to install them
+The first thing you need to do is to install docker on your machine if you haven't done so.
 
-```
-Give examples
-```
+Docker offers many different versions of their software for different platforms. However, the operating system that I used to set up the docker environment is Ubuntu 16.04. I would recommand using the same environment as I do if you can for the best result. 
 
-### Installing
+There is a detailed instruction for the installation on docker's website. Please check the link below for more information.
+     
+      https://docs.docker.com/engine/installation/linux/ubuntulinux/ 
+
+Next, you might want to follow some tutorials to get yourself familiar with some basic docker commands and operations. Below is the link to the official docker tutorial.
+
+      https://docs.docker.com/engine/getstarted/
+
+After the above steps, you are ready to roll.
+
+### Obtaining the docker images for server
+
+There are two ways to get the docker images you need to use.
+
+1. (Recommended) Clone the docker images that I have already created from Docker Hub
+
+      There are two docker images I created. One is for "vm" server, and the other is for "router". Each of them has their required software pre-installed. For example, both images have network tools like ifconfig, ping, and traceroute installed. In addition, the "router" image has quagga installed.
 
 A step by step series of examples that tell you have to get a development env running
 
