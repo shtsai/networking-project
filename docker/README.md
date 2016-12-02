@@ -2,19 +2,21 @@
 
 This document will go over the steps of setting up a docker network.
 
-## Subdirectory
+### Subdirectory
 
 There are two subdirectories:   
-* build: contains the Dockerfile for creating docker image of the vm servers we will use
-* shellscript: contains shellscripts for networks and containers
+* build: contains the Dockerfile for creating docker images of the vm servers we will use
+* shellscript: contains shellscripts for configuring docker networks and containers
       
-Check the README files in these two subdirectories for further details.
+Checkout the README files in these two subdirectories for further details.
 
 ## Getting Started
 
-These instructions will give you the tools you need to set up a docker network in your machine for the experienment. 
+The following instructions will give you the tools and procedures you need know to set up a docker network in your machine for the experienment. 
 
 ### Prerequisites
+
+#### Installation
 
 The first thing you need to do is to install docker on your machine if you haven't done so.
 
@@ -23,6 +25,8 @@ Docker offers many different versions of their software for different platforms.
 There is a detailed instruction for the installation on docker's website. Please check the link below for more information.
      
       https://docs.docker.com/engine/installation/linux/ubuntulinux/ 
+      
+#### Docker Tutorials
 
 Next, you might want to follow some tutorials to get yourself familiar with some basic docker commands and operations. Below is the link to the official docker tutorial.
 
@@ -34,9 +38,22 @@ After the above steps, you are ready to roll.
 
 There are two ways to get the docker images you need to use.
 
-1. (Recommended) Clone the docker images that I have already created from Docker Hub
+1. (Recommended) Pull the docker images that I have already created from Docker Hub
 
-      There are two docker images I created. One is for "vm" server, and the other is for "router". Each of them has their required software pre-installed. For example, both images have network tools like ifconfig, ping, and traceroute installed. In addition, the "router" image has quagga installed.
+      There are two docker images that I created. One is for "vm" server, and the other is for "router". Each of them is already correctly configured and has their required software pre-installed. For example, both images have network tools like ifconfig, ping, and traceroute installed. In addition, the "router" image has quagga installed.
+      
+      The command for pulling images:
+
+      ```
+      docker pull shtsai7/server:vm        // image for "vm" 
+      docker pull shtsai7/server:router    // image for "router"
+      ```
+      
+      After these command, check will docker images
+      
+      Feel free to make any change you need and commit to your own repository.
+      
+
 
 A step by step series of examples that tell you have to get a development env running
 
