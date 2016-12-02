@@ -40,84 +40,34 @@ There are two ways to get the docker images you need to use.
 
 1. (Recommended) Pull the docker images that I have already created from Docker Hub
 
-      There are two docker images that I created. One is for "vm" server, and the other is for "router". Each of them is already correctly configured and has their required software pre-installed. For example, both images have network tools like ifconfig, ping, and traceroute installed. In addition, the "router" image has quagga installed.
+      There are two docker images that I created. One is for "vm" server, and the other is for "router". Both of them are based on ubuntu:16.04. They are already correctly configured and have their required software pre-installed. For example, both images have network tools like ifconfig, ping, and traceroute installed. In addition, the "router" image has quagga installed.
       
-      The command for pulling images:
+      The command for pulling images from my docker repository:
 
       ```
       docker pull shtsai7/server:vm        // image for "vm" 
       docker pull shtsai7/server:router    // image for "router"
       ```
       
-      After these command, check will docker images
+      After executing the above commands, you can check the result by doing the following command, which displays all local docker image files on your machine:
       
-      Feel free to make any change you need and commit to your own repository.
+      ```
+      docker images
+      ```
       
+      If everything works out correctly, you should see those two images listed there.
+      
+      Once you obtain the docker images, feel free to make any change you need to them and commit to your own repository.
+      
+2. Build the docker images from scratch using Dockerfile
 
-
-A step by step series of examples that tell you have to get a development env running
-
-Say what the step will be
-
-```
-Give the example
-```
-
-And repeat
-
-```
-until finished
-```
-
-End with an example of getting some data out of the system or using it for a little demo
-
-## Running the tests
-
-Explain how to run the automated tests for this system
-
-### Break down into end to end tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-## Deployment
-
-Add additional notes about how to deploy this on a live system
-
-## Built With
-
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
-
-## Contributing
-
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
-
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
+      Building the docker images using Dockerfile gives you more options and flexibilities to choose and configure what you want in your docker image. Note that most docker images of Linux distros (such as ubuntu) on Docker Hub are in their most basic forms, meaning they come with almost no software pre-installed (even for the most basic programs like ifconfig, ping, etc). Therefore, if you decide to take this approach, you will need to install all the software you need in the build process. This is important because if you install some software after you start a container using an image, the changes you made in that container will not affect the image you used. Therefore, every time you start a new container, you will have to repeat the tedious installation process, which can be very annoying.
+      
+      In the subdirectory "build/", I included the Dockerfile I used to build the server image. You can start from there. There is also a README file in that directory, which briefly explains how the Dockerfile works. Check that README file for more information about building docker images.
 
 ## Authors
 
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
-
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+* **Shang-Hung Tsai** - [networking-project](https://github.com/shtsai7/networking-project.git)
 
 ## Acknowledgments
 
