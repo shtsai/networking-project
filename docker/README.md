@@ -65,6 +65,12 @@ There are two ways to get the docker images you need to use.
       
       In the subdirectory "build/", I included the Dockerfile I used to build the server image. You can start from there. There is also a README file in that directory, which briefly explains how the Dockerfile works. Check that README file for more information about building docker images.
 
+### Creating Docker networks
+
+The next step is to create docker networks so that our containers can connect to them. 
+
+
+
 ## Authors
 
 * **Shang-Hung Tsai** - [networking-project](https://github.com/shtsai7/networking-project.git)
