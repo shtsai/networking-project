@@ -25,7 +25,11 @@ Docker offers many different versions of their software for different platforms.
 There is a detailed instruction for the installation on docker's website. Please check the link below for more information.
      
       https://docs.docker.com/engine/installation/linux/ubuntulinux/ 
-      
+     
+After you installed docker, don't forget to check out how to manage docker as a non-root user. After you configure this, you will not need to use "sudo" every time you want to execute a docker command. The link is shown below.
+
+      https://docs.docker.com/engine/installation/linux/ubuntulinux/#manage-docker-as-a-non-root-user
+     
 #### Docker Tutorials
 
 Next, you might want to follow some tutorials to get yourself familiar with some basic docker commands and operations. Below is the link to the official docker tutorial.
@@ -69,6 +73,69 @@ There are two ways to get the docker images you need to use.
 
 The next step is to create docker networks so that our containers can connect to them. 
 
+**It is recommended that you have all your network design ready on your hand, and then create the docker networks you need. It would be very difficult to change things around after you connect everything together. In worst case, you might have to give up all the networks you created and start all over again.**
+
+#### Create a network
+
+When you create a network, you need to specify the network driver you want to use, network id, netmask, and the name of the network you are creating.
+
+* For the network driver, I found that the default driver "bridge" works fine in this case, so I will stick with the default driver. 
+* You can specify the network id and netmask you want to use. This is optional, but it is helpful to specify it when you are designing a network.
+* Network name is the name of the network. You will be using it when you connect your containers to the network, so pick a good name for it.
+
+Example:
+```
+docker network create -d bridge --subnet=192.168.0.0/16 network1
+```
+> The above command creates a docker network using the *bridge* driver, with a network id of 192.168.0.0 and a netmask of             255.255.0.0, and the name of this network is called *network1*.
+
+For more options regarding docker network creation, please use the help command:
+```
+docker network create --help
+```
+
+#### To check the list of all docker networks on your machine
+
+Use the following command:
+```
+docker network ls
+```
+You should see the default networks and the networks you created.
+
+#### To inspect a network
+
+Use the *inspect* command following by the name of the network you want to inspect:
+```
+docker network inspect network1
+```
+This command should give you the configuration details of this network, including its subnet, driver, a list of containers that are connected to this network. 
+
+#### To remove a network
+
+Use the *rm* command following by the name of the network you want to remove:
+```
+docker network rm network1
+```
+If you list all the networks again, this network should be removed.
+
+#### To connect a container to a network
+
+Although I haven't talked about how to run a container yet, I will quickly go over the command you will need to use to connect a container to a network. This is actually pretty straightforward. 
+The command you will use is *connect*. When you make this connection, you can also specify an IP address you want your container to use. If you don't specify it, the network will automatically assign one for you. After that, just enter the names of the network and container you want to connect.
+```
+docker network connect --ip 192.168.0.101 network1 container1
+```
+
+To check the result, use *inspect* command to inspect the network, and see if the container is connected to it.
+
+#### To connect a container to a network
+
+Simply use the *disconnect* command, followed by the names of the network and container.
+```
+docker network disconnect network1 container1
+```
+
+### Running docker containers
 
 
 ## Authors
@@ -77,7 +144,4 @@ The next step is to create docker networks so that our containers can connect to
 
 ## Acknowledgments
 
-* Hat tip to anyone who's code was used
-* Inspiration
-* etc
 
