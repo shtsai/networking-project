@@ -1,6 +1,12 @@
-# Project Title
+# Docker
 
-One Paragraph of project description goes here
+This document will go over the steps of setting up a docker network.
+
+## Subdirectory
+
+There are two subdirectories:
+      -build: contains the Dockerfile for creating docker image of the vm servers we will use
+      -shellscript: contains shellscripts 
 
 ## Getting Started
 
