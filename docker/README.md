@@ -137,6 +137,38 @@ docker network disconnect network1 container1
 
 ### Running docker containers
 
+#### Run a docker container
+
+There are several ways that you can run a docker container, but I am going to focus on the interactive way because we need to frequently issue commands and change configurations. Below is a typical command I used to run "vm" containers:
+```
+docker run -ti --cap-add NET_ADMIN --network=vm1 --name vm1 shtsai7/server:vm /bin/bash
+``` 
+* -ti indicates that we are running the container in an interactive way
+* --cap-add NET_ADMIN allows the this container to modify its ip route table
+* --network=vm1 specifies the default network to which this container is attached. This network is used to connect to the Internet.
+* --name vm1 specifies the name of this container
+* shtsai7/server:vm is the name of docker image we will use, notice the tag is "vm"
+* /bin/bash is the program we will run this container, which is shell
+
+After entering this command, you are now inside a docker container. 
+
+#### Temporarily disattach from the container
+
+If you want disattach from the container, you can do:
+```
+CTRL-P CTRL-Q
+```
+This command will bring you back you the shell of your host OS. Notice that the container is still running in the background.
+
+#### List all the containers in your machine
+
+Simply use the following command:
+```
+docker ps -a
+```
+This command will list all the containers (no matter what state they are in) along with some information about each of them.
+
+
 
 ## Authors
 
