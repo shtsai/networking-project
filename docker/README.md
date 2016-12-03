@@ -160,6 +160,11 @@ docker run -ti --cap-add NET_ADMIN --network=vm1 --name vm1 shtsai7/server:vm /b
 
 After entering this command, you are now inside a docker container. 
 
+**Note: for containers that will be running quagga (i.e. routers), you need to give them additional privilege. Otherwise, you will get an error when you try to run quagga. To do this, add an additional option in the command. Example:
+```
+docker run -ti --privileged --cap-add NET_ADMIN --network=r1 --name r1 shtsai7/server:router /bin/bash
+```
+
 #### Temporarily disattach from the container
 
 If you want disattach from the container, you can do:
@@ -203,10 +208,17 @@ Repeating the the above commands every time you create a network can be tedious.
 
 Please refer to the README file in [shellscript/](https://github.com/shtsai7/Networking-project/tree/master/docker/shellscript) directory for more information.
 
+## Quagga
+
+Once you have everything mentioned above correctly set up, you are ready to run Quagga on your routers.
+
+Please refer to the README file in [quagga/](https://github.com/shtsai7/networking-project/tree/master/quagga) for further information about running Quagga.
+
 ## Authors
 
 * **Shang-Hung Tsai** - [networking-project](https://github.com/shtsai7/networking-project.git)
 
 ## Acknowledgments
 
+* Docker [tutorials](https://docs.docker.com/engine/tutorials/)
 
