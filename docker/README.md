@@ -168,7 +168,13 @@ docker ps -a
 ```
 This command will list all the containers (no matter what state they are in) along with some information about each of them.
 
+#### Attach to a container
 
+First you need to make sure the container to which you want to attach is actually running. This can be done using the above command.
+After that, you can attach to a container using *docker attach* followed by the name of the container:
+```
+docker attach container1
+```
 
 ## Authors
 
