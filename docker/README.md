@@ -5,8 +5,8 @@ This document will go over the steps of setting up a docker network.
 ### Subdirectory
 
 There are two subdirectories:   
-* build: contains the Dockerfile for creating docker images of the vm servers we will use
-* shellscript: contains shellscripts for configuring docker networks and containers
+* [build](https://github.com/shtsai7/Networking-project/tree/master/docker/build): contains the Dockerfile for creating docker images of the vm servers we will use
+* [shellscript](https://github.com/shtsai7/Networking-project/tree/master/docker/shellscript): contains shellscripts for configuring docker networks and containers
       
 Checkout the README files in these two subdirectories for further details.
 
@@ -38,6 +38,8 @@ Next, you might want to follow some tutorials to get yourself familiar with some
 
 After the above steps, you are ready to roll.
 
+---------------------------------------------------------------------------------------------------
+
 ### Obtaining the docker images for server
 
 There are two ways to get the docker images you need to use.
@@ -67,7 +69,9 @@ There are two ways to get the docker images you need to use.
 
       Building the docker images using Dockerfile gives you more options and flexibilities to choose and configure what you want in your docker image. Note that most docker images of Linux distros (such as ubuntu) on Docker Hub are in their most basic forms, meaning they come with almost no software pre-installed (even for the most basic programs like ifconfig, ping, etc). Therefore, if you decide to take this approach, you will need to install all the software you need in the build process. This is important because if you install some software after you start a container using an image, the changes you made in that container will not affect the image you used. Therefore, every time you start a new container, you will have to repeat the tedious installation process, which can be very annoying.
       
-      In the subdirectory "build/", I included the Dockerfile I used to build the server image. You can start from there. There is also a README file in that directory, which briefly explains how the Dockerfile works. Check that README file for more information about building docker images.
+      In the subdirectory "[build/](https://github.com/shtsai7/Networking-project/tree/master/docker/build)", I included the Dockerfile I used to build the server image. You can start from there. There is also a README file in that directory, which briefly explains how the Dockerfile works. Check that README file for more information about building docker images.
+
+---------------------------------------------------------------------------------------------------
 
 ### Creating Docker networks
 
@@ -121,7 +125,7 @@ If you list all the networks again, this network should be removed.
 #### To connect a container to a network
 
 Although I haven't talked about how to run a container yet, I will quickly go over the command you will need to use to connect a container to a network. This is actually pretty straightforward. 
-The command you will use is *connect*. When you make this connection, you can also specify an IP address you want your container to use. If you don't specify it, the network will automatically assign one for you. After that, just enter the names of the network and container you want to connect.
+The command you will use is *connect*. When you make this connection, you can also specify an IP address you want your container to use in that subnet. If you don't specify it, an IP address in that subnet will be automatically assigned one for you. After that, just enter the names of the network and container you want to connect.
 ```
 docker network connect --ip 192.168.0.101 network1 container1
 ```
@@ -134,6 +138,10 @@ Simply use the *disconnect* command, followed by the names of the network and co
 ```
 docker network disconnect network1 container1
 ```
+
+**Note that when we start a docker container, we usually specify a network in the option. This network is used by the container to connect to the Internet. Thus, no matter what other network configurations we made, the container can still maintain Internet connection. Every container should have their own private connection to the Internet through this interface. These networks should be created before we start the containers, and they must be configured in different subnets.**
+
+---------------------------------------------------------------------------------------------------
 
 ### Running docker containers
 
@@ -175,6 +183,25 @@ After that, you can attach to a container using *docker attach* followed by the 
 ```
 docker attach container1
 ```
+
+---------------------------------------------------------------------------------------------------
+
+### Connecting docker containers into a large network
+
+Once you have your docker networks created and containers running, you can go ahead and connect them together. This step should be pretty straightforward, as we just need to use *docker connect* command to connect networks and containers. 
+```
+docker network connect --ip 192.168.0.101 network1 container1
+docker network connect --ip 192.168.0.102 network1 container2
+```
+Two containers that connect to the same network are in the same subnet and thus directly connected. There is a logical link between such two containers. On the other hand, containers that are not in the same subnet are not directly connected. As a result, routers are needed to direct traffics between these containers.
+
+---------------------------------------------------------------------------------------------------
+
+### Using shellscript to facilitate network creation
+
+Repeating the the above commands every time you create a network can be tedious. Fortunately, we can use shellscript file to make this job easier. All you need to do is to change the configuration in these files, and then execute them in the correct order.
+
+Please refer to the README file in [shellscript/](https://github.com/shtsai7/Networking-project/tree/master/docker/shellscript) directory for more information.
 
 ## Authors
 
