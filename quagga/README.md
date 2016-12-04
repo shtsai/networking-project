@@ -211,10 +211,12 @@ This the above command, "10.1.0.0/16" is a prefix of IP addresses. "10.1.1.2" is
 To make sure you network is working correctly. You can use the following tools.
 
 1. ping
-   Use ping to send packets from one vm in a subnet to another vm in another subnet. If everything is working correctly, one vm should be able to ping another.
+
+ Use ping to send packets from one vm in a subnet to another vm in another subnet. If everything is working correctly, one vm should be able to ping another.
    
 2. traceroute
-   Use traceroute to trace the path taken by the packets from one vm to another vm. Check the result and see if it is the same as what you expect.
+
+ Use traceroute to trace the path taken by the packets from one vm to another vm. Check the result and see if it is the same as what you expect.
 
 *Both ping and traceroute are pre-installed in vm image (shtsai7/server:vm)*
 
