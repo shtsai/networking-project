@@ -23,7 +23,7 @@ The command for installing quagga is pretty straightforward.
 apt-get update && apt-get install quagga
 ```
 
-**If you are building docker image using Dockerfile, make sure you add this installation command to your build for the router image.
+**If you are building docker image using Dockerfile, make sure you add this installation command to your build for the router image.**
 
 ---------------------------------------------------------------------------------------------------
 
@@ -69,7 +69,7 @@ You also need the config file for vtysh. Do:
 cp /usr/share/doc/quagga/examples/vtysh.conf.sample /etc/quagga/vtysh.conf
 ```
 
-After you have the vtysh.conf file, you need to make one change in it. Disable the setting for "service integrated-vtysh-config" by commenting out this line.
+After you have the vtysh.conf file, you need to make one change in it. Disable the setting for "service integrated-vtysh-config" by commenting out this line using "!".
 ```
 !
 ! Sample configuration file for vtysh.
@@ -106,7 +106,7 @@ isisd_options="  --daemon "
 babeld_options="  --daemon "
 ```
 
-Note that the "vtysh_enable" option should be "yes", so that we can access the quagga router via vtysh later.#
+Note that the "vtysh_enable" option should be "yes", so that we can access the quagga router via vtysh later.
 
 *This step has been done in the router image (shtsai7/server:router).*
 
@@ -130,19 +130,51 @@ Now you can run the quagga daemons. Use the following command:
 ```
 /etc/init.d/quagga start
 ```
-This will get the quagga daemons running. However, we are not finished yet because we haven't configure the OSPF protocol to running on the correct interfaces. To do this, we will need to first get a correct version of the daemon config file, which correctly shows the network interfaces our container has and other information.
+This will get the quagga daemons running. However, we are not finished yet because we haven't configure the OSPF protocol to running on the correct interfaces. To do this, we will need to first get correct version of the daemon config files, which correctly shows the network interfaces our container has and other information.
 
 First, we run vtysh, which is a shell interface for the router:
 ```
 vtysh
 ```
-You will probably see a weird blank page with "END" showing on the bottom-left corner. Press "q" to exit this blank page and now you are inside the vtysh.
+You will probably see a weird blank page with "END" showing on the bottom-left corner. Press "q" to exit this blank page and now you are inside the vtysh. You should see something like following:
+> Hello, this is Quagga (version 0.99.24.1)
 
-To obtain the new config files, enter the following command in vtysh:
+> Copyright 1996-2005 Kunihiro Ishiguro, et al.
+
+After you are inside the vtysh, enter the following command to obtain the correct config files:
 ```
 write
 ```
-You should see "Configuration saved to /etc/quagga/zebra.conf" and "Configuration saved to /etc/quagga/ospfd.conf". This two files correctly reflect the actual interfaces that you container has. 
+You should see the results below:
+> Configuration saved to /etc/quagga/zebra.conf
+
+> Configuration saved to /etc/quagga/ospfd.conf
+This two files correctly reflect the actual interfaces that you container has. 
+
+---------------------------------------------------------------------------------
+
+#### Check IP Forwarding is On
+
+While we are still inside vtysh, we can do a quick check to see if IP forwarding is turned on. Type the following command in vtysh:
+```
+show ip forwarding
+```
+If IP forwarding is on, you will see a message like this:
+> IP forwarding is on
+
+Otherwise, you will need to turn on IP forwarding. To do this, open the file /proc/sys/net/ipv4/ip_forward and change the value inside this file to "1":
+```
+emacs /proc/sys/net/ipv4/ip_forward
+```
+
+After making sure that IP forwarding is on, we can exit vtysh for now use the following command:
+```
+exit
+```
+
+---------------------------------------------------------------------------------
+
+#### Add Network Parameters in ospfd.conf
 
 Next, we need to let the router know where we want it to run ospf. Open the /etc/quagga/ospfd.conf, find the "router ospf" line, and add the subnet id, netmask, and the area below that line. For example:
 ```
@@ -150,6 +182,98 @@ route ospfd
  network 10.1.0.0/16 area 0.0.0.0
 ```
 The subnet id and netmask tell the router where you want the ospf to run. These two parameters should come from one of subnets that the container is currently attached. The area parameter can be set to 0.0.0.0 for now because we are not using it in this experiment.
+
+Now we have correctly configured the quagga router, and we can restart quagga now:
+```
+/etc/init.d/quagga restart
+```
+
+--------------------------------------------------------------------------------------------
+
+#### Add a Static Route to the Router into vm's Routing Table
+
+Now, the routers are up and running. However, vms are still no aware of these routers even though they directly are connected. When a vm sees an IP address that is not in its subnet, it will try to go to the default route specified in its ip routing table instead of going to the router we just set up.
+
+Therefore, we need add an entry into the vm's routing table, so that when it see an IP address that belongs to the network we created, it will go to our quagga routers. 
+
+To add a static route, use the "ip route add" command. For example:
+```
+ip route add 10.1.0.0/16 via 10.1.1.2
+```
+This the above command, "10.1.0.0/16" is a prefix of IP addresses. "10.1.1.2" is the IP address of the router's interface that we are directly connected (within a subnet). This entry implies that, for all IP addresses that matches this prefix (10.1.0.0/16), route it to the this router's interface (10.1.1.2). 
+
+**Congratulation, you have finished all the Quagga configurations. Now the whole network you created should be connected. 
+
+----------------------------------------------------------------------------------------------
+
+#### Test Your Network
+
+To make sure you network is working correctly. You can use the following tools.
+
+1. ping
+   Use ping to send packets from one vm in a subnet to another vm in another subnet. If everything is working correctly, one vm should be able to ping another.
+   
+2. traceroute
+   Use traceroute to trace the path taken by the packets from one vm to another vm. Check the result and see if it is the same as what you expect.
+
+*Both ping and traceroute are pre-installed in vm image (shtsai7/server:vm)*
+
+If everything is good, then you can go ahead and start your experiments!
+
+----------------------------------------------------------------------------------------------
+
+### Quagga vtysh Command
+
+This section introduces some useful quagga commands that you can use in vtysh.
+
+*If you don't want to enter vtysh, and execute quagga commands in your linux shell, you can use the -c option. For example:*
+```
+vtysh -c "show ip route"
+```
+*Using this option, you can execute your quagga command without entering vtysh."
+
+#### show interface 
+
+This command shows the information about a particular interface. For example:
+```
+show interface eth0
+```
+
+#### show ip forwarding
+
+This command shows if IP forwarding is on.
+```
+show ip forwarding
+```
+
+#### show ip route
+
+This command shows ip routing information.
+```
+show ip route
+```
+
+#### show ip ospf route
+
+This command shows ospf routing table.
+```
+show ip ospf route
+```
+
+#### show ip ospf neighbor
+```
+show ip ospf neighbor
+```
+
+#### show ip ospf database
+```
+show ip ospf database
+```
+
+#### show ip ospf interface
+```
+show ip ospf interface
+```
 
 ----------------------------------------------------------------------------------------------
 
@@ -159,5 +283,6 @@ The subnet id and netmask tell the router where you want the ospf to run. These 
 
 ## Acknowledgments
 
-* Docker [tutorials](https://docs.docker.com/engine/tutorials/)
+* [Quagga Documentation](http://www.nongnu.org/quagga/docs/docs-info.html)
+* [OpenManiak tutorial](https://openmaniak.com/quagga.php)
 
