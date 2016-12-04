@@ -1,218 +1,157 @@
-# Docker
+# Quagga
 
-This document will go over the steps of setting up a docker network.
-
-### Subdirectory
-
-There are two subdirectories:   
-* [build](https://github.com/shtsai7/Networking-project/tree/master/docker/build): contains the Dockerfile for creating docker images of the vm servers we will use
-* [shellscript](https://github.com/shtsai7/Networking-project/tree/master/docker/shellscript): contains shellscripts for configuring docker networks and containers
-      
-Checkout the README files in these two subdirectories for further details.
+This document will go over the steps of setting up Quagga in a docker container that plays the role of a router.
 
 ## Getting Started
 
-The following instructions will give you the tools and procedures you need know to set up a docker network in your machine for the experienment. 
+The following instructions will give you the tools and procedures you need know to run Quagga in a container, which allow you to turn a container into a router running OSPF. 
+
+**If you are using the docker image I created for routers (shtsai7/server:router), most of following configurations have already been done. However, I will go over the configuration process step by step for further reference.**
 
 ### Prerequisites
 
+**Before you preceed, make sure you have read the [documentation for setting up docker containers and networks](https://github.com/shtsai7/networking-project/tree/master/docker).**
+
 #### Installation
 
-The first thing you need to do is to install docker on your machine if you haven't done so.
+The first thing you need to do is to install quagga in the router containers.
 
-Docker offers many different versions of their software for different platforms. However, the operating system that I used to set up the docker environment is Ubuntu 16.04. I would recommand using the same environment as I do if you can for the best result. 
+**If you are using the docker image I created for routers (shtsai7/server:router), the quagga software is already installed and you can skip the Installation step.**
 
-There is a detailed instruction for the installation on docker's website. Please check the link below for more information.
-     
-      https://docs.docker.com/engine/installation/linux/ubuntulinux/ 
-     
-After you installed docker, don't forget to check out how to manage docker as a non-root user. After you configure this, you will not need to use "sudo" every time you want to execute a docker command. The link is shown below.
+The command for installing quagga is pretty straightforward.
+```
+apt-get update && apt-get install quagga
+```
 
-      https://docs.docker.com/engine/installation/linux/ubuntulinux/#manage-docker-as-a-non-root-user
-     
-#### Docker Tutorials
-
-Next, you might want to follow some tutorials to get yourself familiar with some basic docker commands and operations. Below is the link to the official docker tutorial.
-
-      https://docs.docker.com/engine/getstarted/
-
-After the above steps, you are ready to roll.
+**If you are building docker image using Dockerfile, make sure you add this installation command to your build for the router image.
 
 ---------------------------------------------------------------------------------------------------
 
-### Obtaining the docker images for server
+### Quagga Configuration
 
-There are two ways to get the docker images you need to use.
+#### Activate the Quagga Daemons
 
-1. (Recommended) Pull the docker images that I have already created from Docker Hub
+You need to first activate the quagga daemons that you want to run on your router. In this experiment, we will need *zebra* and *ospfd*.
 
-      There are two docker images that I created. One is for "vm" server, and the other is for "router". Both of them are based on ubuntu:16.04. They are already correctly configured and have their required software pre-installed. For example, both images have network tools like ifconfig, ping, and traceroute installed. In addition, the "router" image has quagga installed.
-      
-      The command for pulling images from my docker repository:
-
-      ```
-      docker pull shtsai7/server:vm        // image for "vm" 
-      docker pull shtsai7/server:router    // image for "router"
-      ```
-      
-      After executing the above commands, you can check the result by doing the following command, which displays all local docker image files on your machine:
-      
-      ```
-      docker images
-      ```
-      
-      If everything works out correctly, you should see those two images listed there.
-      
-      Once you obtain the docker images, feel free to make any change you need to them and commit to your own repository.
-      
-2. Build the docker images from scratch using Dockerfile
-
-      Building the docker images using Dockerfile gives you more options and flexibilities to choose and configure what you want in your docker image. Note that most docker images of Linux distros (such as ubuntu) on Docker Hub are in their most basic forms, meaning they come with almost no software pre-installed (even for the most basic programs like ifconfig, ping, etc). Therefore, if you decide to take this approach, you will need to install all the software you need in the build process. This is important because if you install some software after you start a container using an image, the changes you made in that container will not affect the image you used. Therefore, every time you start a new container, you will have to repeat the tedious installation process, which can be very annoying.
-      
-      In the subdirectory "[build/](https://github.com/shtsai7/Networking-project/tree/master/docker/build)", I included the Dockerfile I used to build the server image. You can start from there. There is also a README file in that directory, which briefly explains how the Dockerfile works. Check that README file for more information about building docker images.
-
----------------------------------------------------------------------------------------------------
-
-### Creating Docker networks
-
-The next step is to create docker networks so that our containers can connect to them. 
-
-**It is recommended that you have all your network design ready on your hand, and then create the docker networks you need. It would be very difficult to change things around after you connect everything together. In worst case, you might have to give up all the networks you created and start all over again.**
-
-#### Create a network
-
-When you create a network, you need to specify the network driver you want to use, network id, netmask, and the name of the network you are creating.
-
-* For the network driver, I found that the default driver "bridge" works fine in this case, so I will stick with the default driver. 
-* You can specify the network id and netmask you want to use. This is optional, but it is helpful to specify it when you are designing a network.
-* Network name is the name of the network. You will be using it when you connect your containers to the network, so pick a good name for it.
-
-Example:
+To do this, we need to change the daemons configuration files. Use your favorite text editor to open the following file:
 ```
-docker network create -d bridge --subnet=192.168.0.0/16 network1
-```
-> The above command creates a docker network using the *bridge* driver, with a network id of 192.168.0.0 and a netmask of             255.255.0.0, and the name of this network is called *network1*.
-
-For more options regarding docker network creation, please use the help command:
-```
-docker network create --help
+emacs /etc/quagga/daemons
 ```
 
-#### To check the list of all docker networks on your machine
-
-Use the following command:
+After you open this file, change the value of *zebra* and *ospfd* to "yes".
 ```
-docker network ls
+zebra=yes
+bgpd=no
+ospfd=yes
+ospf6d=no
+ripd=no
+ripngd=no
 ```
-You should see the default networks and the networks you created.
+Now, *zebra* and *ospfd* daemons have been activated.
 
-#### To inspect a network
+*This step has been done in the router image (shtsai7/server:router).*
 
-Use the *inspect* command following by the name of the network you want to inspect:
+----------------------------------------------------------------------------------------
+
+#### Add Configuration Files for Daemons and vtysh (vty shell)
+
+A configuration file (.conf) is required for each daemon you activated. You can copy the sample config files provided by quagga and go from there.
+
+To copy the config file:
 ```
-docker network inspect network1
+cp /usr/share/doc/quagga/examples/zebra.conf.sample /etc/quagga/zebra.conf
+cp /usr/share/doc/quagga/examples/ospfd.conf.sample /etc/quagga/ospfd.conf
 ```
-This command should give you the configuration details of this network, including its subnet, driver, a list of containers that are connected to this network. 
+*As the their names suggested, these configuration file are just sample file. You will need to change them later when you start quagga.*
 
-#### To remove a network
-
-Use the *rm* command following by the name of the network you want to remove:
+You also need the config file for vtysh. Do:
 ```
-docker network rm network1
-```
-If you list all the networks again, this network should be removed.
-
-#### To connect a container to a network
-
-Although I haven't talked about how to run a container yet, I will quickly go over the command you will need to use to connect a container to a network. This is actually pretty straightforward. 
-The command you will use is *connect*. When you make this connection, you can also specify an IP address you want your container to use in that subnet. If you don't specify it, an IP address in that subnet will be automatically assigned one for you. After that, just enter the names of the network and container you want to connect.
-```
-docker network connect --ip 192.168.0.101 network1 container1
-```
-
-To check the result, use *inspect* command to inspect the network, and see if the container is connected to it.
-
-#### To connect a container to a network
-
-Simply use the *disconnect* command, followed by the names of the network and container.
-```
-docker network disconnect network1 container1
+cp /usr/share/doc/quagga/examples/vtysh.conf.sample /etc/quagga/vtysh.conf
 ```
 
-**Note that when we start a docker container, we usually specify a network in the option. This network is used by the container to connect to the Internet. Thus, no matter what other network configurations we made, the container can still maintain Internet connection. Every container should have their own private connection to the Internet through this interface. These networks should be created before we start the containers, and they must be configured in different subnets.**
-
----------------------------------------------------------------------------------------------------
-
-### Running docker containers
-
-#### Run a docker container
-
-There are several ways that you can run a docker container, but I am going to focus on the interactive way because we need to frequently issue commands and change configurations. Below is a typical command I used to run "vm" containers:
+After you have the vtysh.conf file, you need to make one change in it. Disable the setting for "service integrated-vtysh-config" by commenting out this line.
 ```
-docker run -ti --cap-add NET_ADMIN --network=vm1 --name vm1 shtsai7/server:vm /bin/bash
-``` 
-* -ti indicates that we are running the container in an interactive way
-* --cap-add NET_ADMIN allows the this container to modify its ip route table
-* --network=vm1 specifies the default network to which this container is attached. This network is used to connect to the Internet.
-* --name vm1 specifies the name of this container
-* shtsai7/server:vm is the name of docker image we will use, notice the tag is "vm"
-* /bin/bash is the program we will run this container, which is shell
-
-After entering this command, you are now inside a docker container. 
-
-**Note: for containers that will be running quagga (i.e. routers), you need to give them additional privilege. Otherwise, you will get an error when you try to run quagga. To do this, add an additional option in the command. Example:
+!
+! Sample configuration file for vtysh.
+!
+! service integrated-vtysh-config
+! hostname quagga-router
+username root nopassword
+!
 ```
-docker run -ti --privileged --cap-add NET_ADMIN --network=r1 --name r1 shtsai7/server:router /bin/bash
-```
+When you disable this setting, the configuration you saved under vtysh will be stored in separate files depending on the protocols you activated. If you activate this setting, all the configuration you saved under vtysh will be put in one file called Quagga.conf, which might cause conflicts when you change the protocols you want to use. Therefore, it is recommended that you disable this setting and keep a separate config file for each daemon (protocol) you use.
 
-#### Temporarily disattach from the container
+*This step has been done in the router image (shtsai7/server:router).*
 
-If you want disattach from the container, you can do:
-```
-CTRL-P CTRL-Q
-```
-This command will bring you back you the shell of your host OS. Notice that the container is still running in the background.
+----------------------------------------------------------------------------------------
 
-#### List all the containers in your machine
+#### Edit debian.conf File
 
-Simply use the following command:
-```
-docker ps -a
-```
-This command will list all the containers (no matter what state they are in) along with some information about each of them.
+By default, the quagga daemons are only listening to the loopback interface. To make the daemons listen to all the interfaces' IP addresses, remove the -A option in the debian.conf.
 
-#### Attach to a container
-
-First you need to make sure the container to which you want to attach is actually running. This can be done using the above command.
-After that, you can attach to a container using *docker attach* followed by the name of the container:
+Open the debian.conf file:
 ```
-docker attach container1
+emacs /etc/quagga/debian.conf
 ```
 
----------------------------------------------------------------------------------------------------
-
-### Connecting docker containers into a large network
-
-Once you have your docker networks created and containers running, you can go ahead and connect them together. This step should be pretty straightforward, as we just need to use *docker connect* command to connect networks and containers. 
+Remove all the -A options:
 ```
-docker network connect --ip 192.168.0.101 network1 container1
-docker network connect --ip 192.168.0.102 network1 container2
+zebra_options="  --daemon "
+bgpd_options="  --daemon "
+ospfd_options="  --daemon "
+ospf6d_options="  --daemon "
+ripd_options="  --daemon "
+ripngd_options="  --daemon "
+isisd_options="  --daemon "
+babeld_options="  --daemon "
 ```
-Two containers that connect to the same network are in the same subnet and thus directly connected. There is a logical link between such two containers. On the other hand, containers that are not in the same subnet are not directly connected. As a result, routers are needed to direct traffics between these containers.
 
----------------------------------------------------------------------------------------------------
+Note that the "vtysh_enable" option should be "yes", so that we can access the quagga router via vtysh later.#
 
-### Using shellscript to facilitate network creation
+*This step has been done in the router image (shtsai7/server:router).*
 
-Repeating the the above commands every time you create a network can be tedious. Fortunately, we can use shellscript file to make this job easier. All you need to do is to change the configuration in these files, and then execute them in the correct order.
+----------------------------------------------------------------------------------------
 
-Please refer to the README file in [shellscript/](https://github.com/shtsai7/Networking-project/tree/master/docker/shellscript) directory for more information.
+#### Change File Permission
 
-## Quagga
+Give user and group ownership to respectively quagga and quaggavty to the files inside the /etc/quagga directory.
+```
+chown quagga.quaggavty /etc/quagga/*.conf
+chmod 640 /etc/quagga/*.conf
+```
 
-Once you have everything mentioned above correctly set up, you are ready to run Quagga on your routers.
+*This step has been done in the router image (shtsai7/server:router).*
 
-Please refer to the README file in [quagga/](https://github.com/shtsai7/networking-project/tree/master/quagga) for further information about running Quagga.
+-----------------------------------------------------------------------------------
+
+#### Run Quagga and vtysh, and Get the Correct .conf Files (configuration NOT finished yet)
+
+Now you can run the quagga daemons. Use the following command:
+```
+/etc/init.d/quagga start
+```
+This will get the quagga daemons running. However, we are not finished yet because we haven't configure the OSPF protocol to running on the correct interfaces. To do this, we will need to first get a correct version of the daemon config file, which correctly shows the network interfaces our container has and other information.
+
+First, we run vtysh, which is a shell interface for the router:
+```
+vtysh
+```
+You will probably see a weird blank page with "END" showing on the bottom-left corner. Press "q" to exit this blank page and now you are inside the vtysh.
+
+To obtain the new config files, enter the following command in vtysh:
+```
+write
+```
+You should see "Configuration saved to /etc/quagga/zebra.conf" and "Configuration saved to /etc/quagga/ospfd.conf". This two files correctly reflect the actual interfaces that you container has. 
+
+Next, we need to let the router know where we want it to run ospf. Open the /etc/quagga/ospfd.conf, find the "router ospf" line, and add the subnet id, netmask, and the area below that line. For example:
+```
+route ospfd
+ network 10.1.0.0/16 area 0.0.0.0
+```
+The subnet id and netmask tell the router where you want the ospf to run. These two parameters should come from one of subnets that the container is currently attached. The area parameter can be set to 0.0.0.0 for now because we are not using it in this experiment.
+
+----------------------------------------------------------------------------------------------
 
 ## Authors
 
