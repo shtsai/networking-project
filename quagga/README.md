@@ -202,7 +202,7 @@ ip route add 10.1.0.0/16 via 10.1.1.2
 ```
 This the above command, "10.1.0.0/16" is a prefix of IP addresses. "10.1.1.2" is the IP address of the router's interface that we are directly connected (within a subnet). This entry implies that, for all IP addresses that matches this prefix (10.1.0.0/16), route it to the this router's interface (10.1.1.2). 
 
-**Congratulation, you have finished all the Quagga configurations. Now the whole network you created should be connected. 
+**Congratulation, you have finished all the Quagga configurations. Now the whole network you created should be connected. **
 
 ----------------------------------------------------------------------------------------------
 
