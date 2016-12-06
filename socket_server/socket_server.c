@@ -19,7 +19,8 @@ int getProtocol(char *packet);
 void handleUDP(char *packet);
 void handleIPinIP(char *packet);
 void handleOSPF(char *packet);
-
+void forwardUDP(char *packet);
+ 
 int main (int argc, char *argv[]) {
   int sockfd;
   struct sockaddr_in cli_addr, serv_addr;
@@ -57,13 +58,15 @@ int main (int argc, char *argv[]) {
       printf("Protocol = %d\n", protocol);
 
       switch (protocol){	
+      case 1:
+	printf("This is an ICMP packet\n\n");
       case 4:
 	handleIPinIP(packet);
 	break;
       case 17:
 	handleUDP(packet);
 	break;
-      case 89:  // handle OSPF here, haven't test it yet because no OSPF packet
+      case 89:
 	handleOSPF(packet);
 	break;
 	
@@ -122,6 +125,7 @@ void handleIPinIP(char *packet) {
   // only handles UDP packets for now, will add others
   if (protocol == 17) {
     handleUDP(packet + ip_len1);
+    forwardUDP(packet + ip_len1);
   }
 }
 
@@ -129,6 +133,45 @@ void handleOSPF(char *packet) {
   // this function handles OSPF packet
   // for now it just prints a message, haven't test it yet
   printf("This is a OSPF packet\n");
+}
+
+void forwardUDP(char *packet) {
+  // Call this function when receives a UDP packet that is 
+  // encapsulated in an IP-in-IP packet.
+  // Decapsulate the UDP packet and forward it to its destination.
+
+  int sockfd;
+  int one = 1;
+  const int *val = &one;
+  struct sockaddr_in serv_addr;
+
+  // create UDP socket
+  sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
+  if (sockfd < 0) {
+      error("ERROR socket openning");
+  } 
+  if (setsockopt(sockfd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one))<0) {
+      error("ERROR setting socket option");
+  }
+
+  struct ip *iphdr = (struct ip*) packet;
+  short iphdr_len = (iphdr->ip_hl)*4;
+  short ip_len = ntohs(iphdr->ip_len);
+  struct udphdr *udp_hdr = (struct udphdr*) (packet+iphdr_len);
+
+  // fill in destination address 
+  serv_addr.sin_family = AF_INET;
+  serv_addr.sin_port = udp_hdr->uh_dport;
+  serv_addr.sin_addr = iphdr->ip_dst;
+
+  // send
+  int sendlen;
+  sendlen = sendto(sockfd, packet, ip_len, 0, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
+  if (sendlen < 0) {
+      error("ERROR sendto failed");
+  } else {
+      printf("Successfully forward packet\n");
+  }
 }
 
 void printHex(char *buffer, int recvlen) {
