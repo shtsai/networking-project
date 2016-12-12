@@ -145,6 +145,9 @@ void forwardUDP(char *packet) {
   const int *val = &one;
   struct sockaddr_in serv_addr;
 
+  char *newpacket = (char *)malloc(2048);
+  memset(newpacket,0,2048);
+
   // create UDP socket
   sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_UDP);
   if (sockfd < 0) {
@@ -155,23 +158,31 @@ void forwardUDP(char *packet) {
   }
 
   struct ip *iphdr = (struct ip*) packet;
+
+  //  struct in_addr ip_src;
+  //  ip_src.s_addr = inet_addr("10.1.1.2");
+  //  iphdr->ip_src = ip_src;
   short iphdr_len = (iphdr->ip_hl)*4;
   short ip_len = ntohs(iphdr->ip_len);
   struct udphdr *udp_hdr = (struct udphdr*) (packet+iphdr_len);
-
+  memcpy(newpacket, packet, ip_len);
+  
   // fill in destination address 
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_port = udp_hdr->uh_dport;
   serv_addr.sin_addr = iphdr->ip_dst;
-
+  
   // send
   int sendlen;
-  sendlen = sendto(sockfd, packet, ip_len, 0, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
+  sendlen = sendto(sockfd, newpacket, ip_len, 0, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
   if (sendlen < 0) {
       error("ERROR sendto failed");
   } else {
       printf("Successfully forward packet\n");
   }
+ 
+  close(sockfd);
+  free(newpacket);
 }
 
 void printHex(char *buffer, int recvlen) {
