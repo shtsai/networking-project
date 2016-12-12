@@ -1,5 +1,5 @@
 CC = gcc
-CTARGET = clientTCP clientUDP clientIPinIP clientRAW clientTCPRAW serverIPinIP serverRAW serverUDP serverTCP
+CTARGET = clientTCP clientUDP clientIPinIP clientRAW clientTCPRAW serverIPinIP serverRAW serverUDP serverTCP clientIPinIP2
 
 %: %.c
 	$(CC) -o $@ $<
