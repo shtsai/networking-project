@@ -202,6 +202,8 @@ ip route add 10.1.0.0/16 via 10.1.1.2
 ```
 This the above command, "10.1.0.0/16" is a prefix of IP addresses. "10.1.1.2" is the IP address of the router's interface that we are directly connected (within a subnet). This entry implies that, for all IP addresses that matches this prefix (10.1.0.0/16), route it to the this router's interface (10.1.1.2). 
 
+However, this operation is temporary, and the routes you added won't be saved after you restart the container. 
+
 **Congratulation, you have finished all the Quagga configurations. Now the whole network you created should be connected.**
 
 ----------------------------------------------------------------------------------------------
@@ -217,6 +219,9 @@ To make sure you network is working correctly. You can use the following tools.
 2. traceroute
 
  Use traceroute to trace the path taken by the packets from one vm to another vm. Check the result and see if it is the same as what you expect.
+
+3. socket_server & socket_client
+ Run socket_server on one of the vms, and send traffics to it using the client code in socket_client.
 
 *Both ping and traceroute are pre-installed in vm image (shtsai7/server:vm)*
 
