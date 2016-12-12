@@ -9,8 +9,10 @@
 #include<netinet/udp.h>
 #include<arpa/inet.h>
 #include<netinet/if_ether.h>  // for ETH_P_IP
+#include<ifaddrs.h>           // for geting interface addresses
+#include<print_packet.h>      // for printing packets
 
-#include<print_packet.h>  // for print packets
+#define INTERFACE_NUM 5       // assume there are at most five interfaces on a host
 
 void error(const char *msg);
 void printHex(char *buffer, int recvlen);
@@ -19,8 +21,14 @@ int getProtocol(char *packet);
 void handleUDP(char *packet);
 void handleIPinIP(char *packet);
 void handleOSPF(char *packet);
+int isForward(char *packet);
 void forwardUDP(char *packet);
- 
+
+// This array "address" is used to store the ip addresses
+// of the host's interfaces
+struct sockaddr_in *address[INTERFACE_NUM];  
+int addrNum;
+
 int main (int argc, char *argv[]) {
   int sockfd;
   struct sockaddr_in cli_addr, serv_addr;
@@ -39,12 +47,20 @@ int main (int argc, char *argv[]) {
     error("ERROR socket");
   }
   
-  /* set specific interface (OPTIONAL)
-  if (setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, "enp0s8", strlen("enp0s8") + 1) < 0) {
-    error("ERROR setting socket option");
+  // get host's interfaces addresses, and store them in "address"
+  addrNum = 0;
+  struct ifaddrs *tmp;
+  getifaddrs(&tmp);
+  while (tmp) {
+    if (tmp->ifa_addr && tmp->ifa_addr->sa_family == AF_INET) {
+      struct sockaddr_in *pAddr = (struct sockaddr_in *) tmp->ifa_addr;
+      address[addrNum] = pAddr;
+      addrNum++;
+    }
+    tmp = tmp->ifa_next;
   }
-  */
-
+  freeifaddrs(tmp);
+  
   int count = 0;   // used for keeping track of the number of packets received
   while (1) {
     printf("waiting for packet ...\n");
@@ -119,13 +135,15 @@ void handleIPinIP(char *packet) {
   
   // print outer header
   int ip_len1 = printIPheader(packet);
-  
   int protocol = getProtocol(packet + ip_len1);
 
   // only handles UDP packets for now, will add others
   if (protocol == 17) {
     handleUDP(packet + ip_len1);
-    forwardUDP(packet + ip_len1);
+    if (isForward(packet) > 0) {
+      printf("Forwarding this packet...\n");
+      forwardUDP(packet + ip_len1);
+    }
   }
 }
 
@@ -133,6 +151,21 @@ void handleOSPF(char *packet) {
   // this function handles OSPF packet
   // for now it just prints a message, haven't test it yet
   printf("This is a OSPF packet\n");
+}
+
+int isForward(char *packet) {
+  // check if the outer destination address of an IP-in-IP packet
+  // matches one of the IP addresses of the host's interfaces
+  // If so, the host is the forward server, and it needs to forward
+  // the encapsulated packet to the destination
+  struct ip *iphdr = (struct ip*) packet;
+  uint32_t dst_addr = iphdr->ip_dst.s_addr;
+  for (int i = 0; i < addrNum; i++) {
+    if (address[i]->sin_addr.s_addr == dst_addr) {
+      return 1;
+    }
+  }
+  return 0;
 }
 
 void forwardUDP(char *packet) {
@@ -159,9 +192,6 @@ void forwardUDP(char *packet) {
 
   struct ip *iphdr = (struct ip*) packet;
 
-  //  struct in_addr ip_src;
-  //  ip_src.s_addr = inet_addr("10.1.1.2");
-  //  iphdr->ip_src = ip_src;
   short iphdr_len = (iphdr->ip_hl)*4;
   short ip_len = ntohs(iphdr->ip_len);
   struct udphdr *udp_hdr = (struct udphdr*) (packet+iphdr_len);
