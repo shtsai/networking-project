@@ -9,7 +9,8 @@ RUN apt-get -y update && apt-get install -y \
   net-tools \
   inetutils-ping \
   emacs \
+  vim \
   make \
   gcc \
-  traceroute
-
+  traceroute \
+  scapy
